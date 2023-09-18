@@ -543,33 +543,7 @@ public class DynmapStructuresPlugin extends JavaPlugin implements Listener {
                 BIOMES[biome.ordinal()] = temp;
             }
         }
-        // Add ruined portals if supported
-        if (StructureType.getStructureTypes().containsKey("ruined_portal")) {
-            for (Biome biome : Biome.values()) {
-                if (biome == THE_END) {
-                    continue;
-                }
-                StructureType[] temp = new StructureType[BIOMES[biome.ordinal()].length + 1];
-                System.arraycopy(BIOMES[biome.ordinal()], 0, temp, 0, BIOMES[biome.ordinal()].length);
-                temp[temp.length - 1] = RUINED_PORTAL;
-                BIOMES[biome.ordinal()] = temp;
-            }
-        }
-        // Add ancient cities if supported
-//        if (StructureType.getStructureTypes().containsKey("ancient_city")) {
-//            ArrayList<Biome> biomes = new ArrayList<Biome>() {{
-//                try {
-//                    add(Biome.valueOf(("DEEP_DARK")));
-//                } catch (IllegalArgumentException e) {
-//                }
-//            }};
-//            for (Biome biome : biomes) {
-//                StructureType[] temp = new StructureType[BIOMES[biome.ordinal()].length + 1];
-//                System.arraycopy(BIOMES[biome.ordinal()], 0, temp, 0, BIOMES[biome.ordinal()].length);
-//                temp[temp.length - 1] = ANCIENT_CITY;
-//                BIOMES[biome.ordinal()] = temp;
-//            }
-//        }
+
         // Fill in id and label data structures
         for (StructureType type : StructureType.getStructureTypes().values()) {
             String id = type.getName().toLowerCase(Locale.ROOT).replace("_", "");
@@ -592,32 +566,32 @@ public class DynmapStructuresPlugin extends JavaPlugin implements Listener {
             } catch (NullPointerException e) {
                 return;
             }
-            // Set up our Dynmap layer
-            String layer = configuration.getString("layer.name");
-            if (layer == null) {
-                layer = "Structures";
-            }
-            set = api.getMarkerSet(layer.toLowerCase(Locale.ROOT));
-            if (set == null) {
-                set = api.createMarkerSet(layer.toLowerCase(Locale.ROOT), layer, null, true);
-            }
-            set.setHideByDefault(configuration.getBoolean("layer.hidebydefault"));
-            set.setLayerPriority(configuration.getInt("layer.layerprio"));
-            noLabels = configuration.getBoolean("layer.noLabels");
-            int minZoom = configuration.getInt("layer.minzoom");
-            if (minZoom > 0) {
-                set.setMinZoom(minZoom);
-            }
-            includeCoordinates = configuration.getBoolean("layer.inc-coord");
+  
+           includeCoordinates = configuration.getBoolean("layer.inc-coord");
             // Create the marker icons
             for (StructureType type : StructureType.getStructureTypes().values()) {
-                String str = type.getName().toLowerCase(Locale.ROOT).replaceAll("_", "");
-                InputStream in = this.getClass().getResourceAsStream("/" + str + ".png");
+                String layer = type.getName();
+                // String label = LABELS.get(type);
+                String setLabel = LABELS.get(type);
+
+                set = api.getMarkerSet(setLabel);
+                if (set == null) {
+                    set = api.createMarkerSet(setLabel, setLabel, null, true);
+                } 
+
+                set.setHideByDefault(configuration.getBoolean("layer.hidebydefault"));
+                set.setLayerPriority(configuration.getInt("layer.layerprio"));
+                noLabels = configuration.getBoolean("layer.noLabels");
+                int minZoom = configuration.getInt("layer.minzoom");
+                if (minZoom > 0) {
+                    set.setMinZoom(minZoom);
+                }
+                InputStream in = this.getClass().getResourceAsStream("/" + layer + ".png");
                 if (in != null) {
-                    if (api.getMarkerIcon("structures." + str) == null) {
-                        api.createMarkerIcon("structures." + str, str, in);
+                    if (api.getMarkerIcon("structures." + layer) == null) {
+                        api.createMarkerIcon("structures." + layer, layer, in);
                     } else {
-                        api.getMarkerIcon("structures." + str).setMarkerIconImage(in);
+                        api.getMarkerIcon("structures." + layer).setMarkerIconImage(in);
                     }
                 }
             }
@@ -666,7 +640,7 @@ public class DynmapStructuresPlugin extends JavaPlugin implements Listener {
                 } catch (NoSuchMethodException e) {
                     biome = world.getBiome(location.getBlockX(), location.getBlockZ());
                 }
-                if (biome != null) {
+                if (biome != null) {                    
                     for (StructureType type : BIOMES[biome.ordinal()]) {
                         if (STRUCTURES.get(type)) {
                             Location structure;
@@ -684,11 +658,18 @@ public class DynmapStructuresPlugin extends JavaPlugin implements Listener {
                                 int x = structure.getBlockX();
                                 int z = structure.getBlockZ();
                                 String label = "";
+                                String setLabel = LABELS.get(type);
                                 if (!noLabels) {
-                                    label = LABELS.get(type);
+                                    label = setLabel;
                                     if (includeCoordinates) {
                                         label = label + " [" + x + "," + z + "]";
                                     }
+                                }
+                                String layer = type.getName();                
+
+                                set = api.getMarkerSet(setLabel);
+                                if (set == null) {
+                                    set = api.createMarkerSet(setLabel, setLabel, null, true);
                                 }
                                 set.createMarker(id + "," + x + "," + z, label, world.getName(), x, 64, z, api.getMarkerIcon("structures." + id), true);
                             }
